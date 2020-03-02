@@ -59,6 +59,7 @@ EXPORTS
 	pmemlog_append
 	pmemlog_appendv
 	pmemlog_rewind
+	pmemlog_truncate
 	pmemlog_tell
 	pmemlog_walk
 

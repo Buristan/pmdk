@@ -49,6 +49,7 @@ LIBPMEMLOG_1.0 {
 		pmemlog_appendv;
 		pmemlog_tell;
 		pmemlog_rewind;
+		pmemlog_truncate;
 		pmemlog_walk;
 		fault_injection;
 	local:

@@ -139,6 +139,7 @@ int pmemlog_append(PMEMlogpool *plp, const void *buf, size_t count);
 int pmemlog_appendv(PMEMlogpool *plp, const struct iovec *iov, int iovcnt);
 long long pmemlog_tell(PMEMlogpool *plp);
 void pmemlog_rewind(PMEMlogpool *plp);
+int pmemlog_truncate(PMEMlogpool *plp, size_t offset);
 void pmemlog_walk(PMEMlogpool *plp, size_t chunksize,
 	int (*process_chunk)(const void *buf, size_t len, void *arg),
 	void *arg);

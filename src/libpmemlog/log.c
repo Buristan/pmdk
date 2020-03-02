@@ -657,6 +657,53 @@ pmemlog_rewind(PMEMlogpool *plp)
 }
 
 /*
+ * pmemlog_truncate -- discard all data, resetting a log memory pool to offset
+ */
+int
+pmemlog_truncate(PMEMlogpool *plp, size_t offset)
+{
+	int ret = 0;
+	LOG(3, "plp %p", plp);
+
+	if (plp->rdonly) {
+		errno = EROFS;
+		ERR("can't truncate read-only log");
+		return -1;
+	}
+
+	util_rwlock_wrlock(plp->rwlockp);
+
+	/* unprotect the pool descriptor (debug version only) */
+	RANGE_RW((char *)plp->addr + sizeof(struct pool_hdr),
+			LOG_FORMAT_DATA_ALIGN, plp->is_dev_dax);
+
+	uint64_t write_offset = le64toh(plp->write_offset);
+	uint64_t start_offset = le64toh(plp->start_offset);
+	uint64_t end_offset   = le64toh(plp->end_offset);
+
+	if (write_offset + offset > end_offset) {
+		/* no space left */
+		errno = EINVAL;
+		ERR("!pmemlog_truncate");
+		ret = -1;
+		goto end;
+	}
+
+	plp->write_offset = htole64(start_offset + offset);
+	if (plp->is_pmem)
+		pmem_persist(&plp->write_offset, sizeof(uint64_t));
+	else
+		pmem_msync(&plp->write_offset, sizeof(uint64_t));
+
+	/* set the write-protection again (debug version only) */
+	RANGE_RO((char *)plp->addr + sizeof(struct pool_hdr),
+			LOG_FORMAT_DATA_ALIGN, plp->is_dev_dax);
+
+end:
+	util_rwlock_unlock(plp->rwlockp);
+	return ret;
+}
+/*
  * pmemlog_walk -- walk through all data in a log memory pool
  *
  * chunksize of 0 means process_chunk gets called once for all data
